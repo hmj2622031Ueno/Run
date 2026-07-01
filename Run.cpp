@@ -10,6 +10,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	SetBackgroundColor(0, 0, 0);	// 背景色の指定
 	SetDrawScreen(DX_SCREEN_BACK);	// 描画面を裏画面にする
 
+	int bgX = 0;	// 背景スクロール用の変数
 	int imgSky = LoadGraph("image/sky.png");
 	int imgBG = LoadGraph("image/backGround.png");
 	int imgWB = LoadGraph("image/woodenBox.png");
@@ -23,8 +24,21 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	while (1)	// メインループ
 	{
 		ClearDrawScreen();	// 画面をクリアする
+
 		DrawGraph(0, 0, imgSky, false);
-		DrawGraph(0, 0, imgBG, true);
+
+		bgX = bgX - 10;
+		if (bgX <= -WIDTH) { bgX = 0; }
+		DrawGraph(bgX, 0, imgBG, true);
+		DrawGraph(bgX + WIDTH, 0, imgBG, true);
+		if (CheckHitKey(KEY_INPUT_LSHIFT) || CheckHitKey(KEY_INPUT_RSHIFT))
+		{
+			bgX = bgX - 20;
+			if (bgX <= -WIDTH) { bgX = 0; }
+			DrawGraph(bgX, 0, imgBG, true);
+			DrawGraph(bgX + WIDTH, 0, imgBG, true);
+		}
+
 		DrawGraph(300, 510, imgWB, true);
 		DrawGraph(catX, catY, imgCat[(timer / 3) % 2], true);
 		timer++;
