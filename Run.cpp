@@ -3,7 +3,7 @@
 
 // 定数の定義
 const int WIDTH = 960, HEIGHT = 640;	// ウィンドウの幅と高さのピクセル数
-enum { TITLE, PLAY, OVER, CLEAR };	// シーンを分けるための列挙定数
+enum { TITLE, PLAY, RESULT};	// シーンを分けるための列挙定数
 
 int catX = 0, catY = 472;
 int targetY = 472;
@@ -21,6 +21,10 @@ int timer = 0;
 int obstacleY;
 int obstacleWidth;
 int obstacleHeight;
+int resultTimer = 0;
+int meter = 0;
+int meterTimer = 0;
+int LoadGraphWithCheck(const char* file);
 
 void GameInit()
 {
@@ -38,6 +42,9 @@ void GameInit()
 	obstacleImage = GetRand(2);
 	obstacleSide = GetRand(1);
 	timer = 0;
+	resultTimer = 0;
+	meter = 0;
+	meterTimer = 0;
 
 	if (obstacleType == 0)
 	{
@@ -57,7 +64,19 @@ void GameInit()
 	else { obstacleWidth = 150; }
 }
 
+int LoadGraphWithCheck(const char* file)
+{
+	int res = LoadGraph(file);
+	if (res == -1) { MessageBox(GetMainWindowHandle(), file, "画像読み込みに失敗", MB_OK | MB_ICONSTOP); }
+	return res;
+}
 
+int LoadSoundMemWithCheck(const char* file)
+{
+	int res = LoadSoundMem(file);
+	if (res == -1) { MessageBox(GetMainWindowHandle(), file, "音声読み込みに失敗", MB_OK | MB_ICONSTOP); }
+	return res;
+}
 
 void DrawText(int x, int y, int col, const char* txt, int val, int siz)
 {
@@ -75,25 +94,31 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	SetBackgroundColor(0, 0, 0);	// 背景色の指定
 	SetDrawScreen(DX_SCREEN_BACK);	// 描画面を裏画面にする
 
-	int imgSky = LoadGraph("image/sky.png");
-	int imgBG = LoadGraph("image/backGround.png");
+	int imgSky = LoadGraphWithCheck("image/sky.png");
+	int imgBG = LoadGraphWithCheck("image/backGround.png");
+	int imgResult = LoadGraphWithCheck("image/result.png");
 	int imgCat[2] = {
-		LoadGraph("image/catWalkA.png"),
-		LoadGraph("image/catWalkB.png")
+		LoadGraphWithCheck("image/catWalkA.png"),
+		LoadGraphWithCheck("image/catWalkB.png")
 	};
-	int imgJump = LoadGraph("image/catJump.png");
+	int imgJump = LoadGraphWithCheck("image/catJump.png");
 	int imgLO[3] = {
-		LoadGraph("image/lowObstacle.png"),
-		LoadGraph("image/lowObstacle1.png"),
-		LoadGraph("image/lowObstacle2.png")
+		LoadGraphWithCheck("image/lowObstacle.png"),
+		LoadGraphWithCheck("image/lowObstacle1.png"),
+		LoadGraphWithCheck("image/lowObstacle2.png")
 	};
 	int imgHO[3] = {
-		LoadGraph("image/highObstacle.png"),
-		LoadGraph("image/highObstacle1.png"),
-		LoadGraph("image/highObstacle2.png")
+		LoadGraphWithCheck("image/highObstacle.png"),
+		LoadGraphWithCheck("image/highObstacle1.png"),
+		LoadGraphWithCheck("image/highObstacle2.png")
 	};
-	int imgClear = LoadGraph("image/clear.png");
-	int imgOver = LoadGraph("image/over.png");
+
+	int sndTitle = LoadSoundMemWithCheck("sound/title.wav");
+	int sndBgm = LoadSoundMemWithCheck("sound/play.mp3");
+	int sndResult = LoadSoundMemWithCheck("sound/result.mp3");
+	int seJump = LoadSoundMemWithCheck("sound/jump.mp3");
+	int seDamage = LoadSoundMemWithCheck("sound/damage.wav");
+
 
 	int bgX = 0;	// 背景スクロール用の変数
 	int titleBgX = 0;
@@ -139,6 +164,8 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		else { obstacleWidth = 150; }
 	}
 
+	GameInit();	// 初期化用関数
+
 	while (1)	// メインループ
 	{
 		ClearDrawScreen();	// 画面をクリアする
@@ -157,25 +184,32 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
 			DrawText(300, 50, 0xffffff, "Run Game", 0, 80);
 			DrawText(250, 320, 0xffffff, "Press the Enter key to start", 0, 30);
-			if (CheckHitKey(KEY_INPUT_RETURN) == 1) { scene = PLAY; }	// エンターキー入力でスタート
+			PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
+			if (CheckHitKey(KEY_INPUT_RETURN) == 1)	// エンターキー入力でスタート
+			{
+				StopSoundMem(sndTitle);
+				scene = PLAY;
+			}
 			break;
 
 		case PLAY:
 			// 空の表示
 			DrawGraph(0, 0, imgSky, false);
+			PlaySoundMem(sndBgm, DX_PLAYTYPE_LOOP);
+
+			meterTimer++;
+			if (meterTimer >= 15)
+			{
+				meter++;
+				meterTimer = 0;
+			}
 
 			// 地面の表示、スクロール
 			bgX = bgX - 15;
 			if (bgX <= -WIDTH) { bgX = 0; }
 			DrawGraph(bgX, 0, imgBG, true);
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
-			if (CheckHitKey(KEY_INPUT_LSHIFT) || CheckHitKey(KEY_INPUT_RSHIFT))
-			{
-				bgX = bgX - 15;
-				if (bgX <= -WIDTH) { bgX = 0; }
-				DrawGraph(bgX, 0, imgBG, true);
-				DrawGraph(bgX + WIDTH, 0, imgBG, true);
-			}
+			DrawText(850, 20, 0xffffff, "%dm", meter, 30);
 
 			if (spaceNow && !spaceOld && !isJump && !isChanging)
 			{
@@ -190,6 +224,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			if (upNow && !isJump && !upOld && !isChanging)
 			{
 				isJump = true;
+				PlaySoundMem(seJump, DX_PLAYTYPE_BACK);
 				if (!reverse) { jumpSpeed = -15; }	// 上にジャンプ
 				else { jumpSpeed = 15; }	// 下にジャンプ
 			}
@@ -293,52 +328,6 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 				DrawGraph(obstacleX, obstacleY, imgHO[obstacleImage], true);
 			}
 
-			if (CheckHitKey(KEY_INPUT_LSHIFT) || CheckHitKey(KEY_INPUT_RSHIFT))
-			{
-				obstacleX -= 15;	// スクロール
-
-				if (obstacleX <= -150)
-				{
-					obstacleX = WIDTH;
-
-					obstacleType = GetRand(1);
-					obstacleImage = GetRand(2);
-					obstacleSide = GetRand(1);
-
-					if (obstacleType == 0)	// 低い障害物
-					{
-						if (obstacleSide == 0)	// 上側
-						{
-							obstacleY = 80;
-						}
-						else	// 下側
-						{
-							obstacleY = 510;
-						}
-					}
-					else	// 高い障害物
-					{
-						if (obstacleSide == 0)	// 上側
-						{
-							obstacleY = 80;
-						}
-						else	// 下側
-						{
-							obstacleY = 310;
-						}
-					}
-				}
-
-				if (obstacleType == 0)	// 低い障害物
-				{
-					DrawGraph(obstacleX, obstacleY, imgLO[obstacleImage], true);
-				}
-				else	// 高い障害物
-				{
-					DrawGraph(obstacleX, obstacleY, imgHO[obstacleImage], true);
-				}
-			}
-
 			if (obstacleType == 0)	// 低い障害物
 			{
 				obstacleHeight = 50;
@@ -358,27 +347,35 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 
 			if (catX < obstacleX + obstacleWidth && catX + 96 > obstacleX && catY < obstacleY + obstacleHeight && catY + 96 > obstacleY)
 			{
-				scene = OVER;
+				StopSoundMem(sndBgm);
+				PlaySoundMem(seDamage, DX_PLAYTYPE_BACK);
+				scene = RESULT;
 			}
 			break;
 
-		case CLEAR:
-			DrawGraph(0, 0, imgClear, false);
-			DrawText(300, 50, 0xffffff, "GAME CLEAR!!", 0, 80);
-			if (CheckHitKey(KEY_INPUT_R)) { scene = PLAY; }
-			if (CheckHitKey(KEY_INPUT_T)) { scene = TITLE; }
-			break;
+		case RESULT:
+			resultTimer++;
+			DrawGraph(0, 0, imgResult, false);
+			PlaySoundMem(sndResult, DX_PLAYTYPE_LOOP);
 
-		case OVER:
-			DrawGraph(0, 0, imgOver, false);
-			DrawText(300, 50, 0xff0000, "GAME OVER", 0, 80);
-			DrawText(280, 290, 0xff0000, "Press the R key to restart", 0, 30);
-			DrawText(300, 370, 0xff0000, "Press the T key to title", 0, 30);
+			if (resultTimer >= 30) { DrawText(330, 50, 0xff8000, "RESULT", 0, 80); }
+			if (resultTimer >= 90)
+			{
+				DrawText(320, 200, 0xffB300, "Distance : %dm", meter, 40);
+			}
+			if (resultTimer >= 120) { DrawText(250, 320, 0xffB300, "Press the R key to restart", 0, 30); }
+			if (resultTimer >= 150) { DrawText(270, 370, 0xffB300, "Press the T key to title", 0, 30); }
 			if (CheckHitKey(KEY_INPUT_R))
 			{
+				StopSoundMem(sndResult);
+				GameInit();
 				scene = PLAY;
 			}
-			if (CheckHitKey(KEY_INPUT_T)) { scene = TITLE; }
+			if (CheckHitKey(KEY_INPUT_T)) {
+				GameInit();
+				StopSoundMem(sndResult);
+				scene = TITLE;
+			}
 			break;
 		}
 
