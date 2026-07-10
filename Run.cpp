@@ -3,7 +3,7 @@
 
 // 定数の定義
 const int WIDTH = 960, HEIGHT = 640;	// ウィンドウの幅と高さのピクセル数
-enum { TITLE, PLAY, RESULT};	// シーンを分けるための列挙定数
+enum { TITLE, HELP, PLAY, RESULT};	// シーンを分けるための列挙定数
 
 int catX = 0, catY = 472;
 int targetY = 472;
@@ -12,6 +12,7 @@ bool spaceOld = false;
 bool isJump = false;
 bool upOld = false;
 bool isChanging = false;
+bool canReverse = true;
 int jumpSpeed = 0;
 int obstacleX = WIDTH;
 int obstacleType = GetRand(1);	// 0=低い 1=高い
@@ -165,6 +166,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	}
 
 	GameInit();	// 初期化用関数
+	PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
 
 	while (1)	// メインループ
 	{
@@ -183,11 +185,30 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			DrawGraph(bgX, 0, imgBG, true);
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
 			DrawText(300, 50, 0xffffff, "Run Game", 0, 80);
-			DrawText(250, 320, 0xffffff, "Press the Enter key to start", 0, 30);
-			PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
+			DrawText(300, 250, 0xffffff, "エンターキーでスタート", 0, 30);
+			DrawText(800, 30, 0xffffff, "ヘルプ(Hキー)", 0, 20);
 			if (CheckHitKey(KEY_INPUT_RETURN) == 1)	// エンターキー入力でスタート
 			{
 				StopSoundMem(sndTitle);
+				PlaySoundMem(sndBgm, DX_PLAYTYPE_LOOP);
+				scene = PLAY;
+			}
+			else if (CheckHitKey(KEY_INPUT_H))
+			{
+				StopSoundMem(sndTitle);
+				scene = HELP;
+			}
+			break;
+
+		case HELP:
+			DrawText(330, 30, 0xffffff, "操作説明", 0, 60);
+			DrawText(200, 170, 0xffffff, "・上キー　:　ジャンプ", 0, 30);
+			DrawText(200, 250, 0xffffff, "・スペースキー　:　上下反転", 0, 30);
+			DrawText(200, 330, 0xffffff, "・Tキー　:　タイトル画面に戻る", 0, 30);
+			DrawText(200, 410, 0xffffff, "・Rキー　:　リスタート", 0, 30);
+			if (CheckHitKey(KEY_INPUT_RETURN) == 1)
+			{
+				PlaySoundMem(sndBgm, DX_PLAYTYPE_LOOP);
 				scene = PLAY;
 			}
 			break;
@@ -195,7 +216,6 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		case PLAY:
 			// 空の表示
 			DrawGraph(0, 0, imgSky, false);
-			PlaySoundMem(sndBgm, DX_PLAYTYPE_LOOP);
 
 			meterTimer++;
 			if (meterTimer >= 15)
@@ -211,7 +231,17 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
 			DrawText(850, 20, 0xffffff, "%dm", meter, 30);
 
-			if (spaceNow && !spaceOld && !isJump && !isChanging)
+			if (obstacleType == 0)
+			{
+				if (obstacleX < 600 && obstacleX > -obstacleWidth)
+				{
+					canReverse = false;
+				}
+			}
+			else { canReverse = true; }
+
+			// プレイヤーの反転処理
+			if (spaceNow && !spaceOld && !isJump && !isChanging && canReverse)
 			{
 				reverse = !reverse;
 				if (reverse) { targetY = 80; }
@@ -349,31 +379,41 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			{
 				StopSoundMem(sndBgm);
 				PlaySoundMem(seDamage, DX_PLAYTYPE_BACK);
+				PlaySoundMem(sndResult, DX_PLAYTYPE_LOOP);
 				scene = RESULT;
+			}
+
+			if (CheckHitKey(KEY_INPUT_T))
+			{
+				GameInit();
+				StopSoundMem(sndBgm);
+				PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
+				scene = TITLE;
 			}
 			break;
 
 		case RESULT:
 			resultTimer++;
 			DrawGraph(0, 0, imgResult, false);
-			PlaySoundMem(sndResult, DX_PLAYTYPE_LOOP);
 
 			if (resultTimer >= 30) { DrawText(330, 50, 0xff8000, "RESULT", 0, 80); }
 			if (resultTimer >= 90)
 			{
-				DrawText(320, 200, 0xffB300, "Distance : %dm", meter, 40);
+				DrawText(330, 200, 0xffB300, "記録 : %dm", meter, 50);
 			}
-			if (resultTimer >= 120) { DrawText(250, 320, 0xffB300, "Press the R key to restart", 0, 30); }
-			if (resultTimer >= 150) { DrawText(270, 370, 0xffB300, "Press the T key to title", 0, 30); }
+			if (resultTimer >= 120) { DrawText(320, 320, 0xffB300, "Rキーでリスタート", 0, 30); }
+			if (resultTimer >= 150) { DrawText(270, 370, 0xffB300, "Tキーでタイトル画面に戻る", 0, 30); }
 			if (CheckHitKey(KEY_INPUT_R))
 			{
 				StopSoundMem(sndResult);
 				GameInit();
+				PlaySoundMem(sndBgm, DX_PLAYTYPE_LOOP);
 				scene = PLAY;
 			}
 			if (CheckHitKey(KEY_INPUT_T)) {
 				GameInit();
 				StopSoundMem(sndResult);
+				PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
 				scene = TITLE;
 			}
 			break;
