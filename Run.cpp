@@ -13,6 +13,7 @@ bool isJump = false;
 bool upOld = false;
 bool isChanging = false;
 bool canReverse = true;
+bool newRecord = false;
 int jumpSpeed = 0;
 int obstacleX = WIDTH;
 int obstacleType = GetRand(1);	// 0=低い 1=高い
@@ -26,6 +27,7 @@ int resultTimer = 0;
 int meter = 0;
 int meterTimer = 0;
 int countDown = 180;
+int hiScore = 0;
 int LoadGraphWithCheck(const char* file);
 
 void GameInit()
@@ -38,6 +40,7 @@ void GameInit()
 	isChanging = false;
 	spaceOld = false;
 	upOld = false;
+	newRecord = false;
 	jumpSpeed = 0;
 	obstacleX = WIDTH;
 	obstacleType = GetRand(1);
@@ -186,9 +189,10 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			if (bgX <= -WIDTH) { bgX = 0; }
 			DrawGraph(bgX, 0, imgBG, true);
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
-			DrawText(300, 50, 0xffffff, "Run Game", 0, 80);
+			DrawText(300, 70, 0xffffff, "Run Game", 0, 80);
 			DrawText(300, 250, 0xffffff, "エンターキーでスタート", 0, 30);
 			DrawText(800, 30, 0xffffff, "ヘルプ(Hキー)", 0, 20);
+			DrawText(10, 30, 0xffd700, "ハイスコア：%dm", hiScore, 20);
 			if (CheckHitKey(KEY_INPUT_RETURN) == 1)	// エンターキー入力でスタート
 			{
 				StopSoundMem(sndTitle);
@@ -419,6 +423,11 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			break;
 
 		case RESULT:
+			if (meter > hiScore)
+			{
+				hiScore = meter;
+				newRecord = true;
+			}
 			resultTimer++;
 			DrawGraph(0, 0, imgResult, false);
 
@@ -429,6 +438,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			}
 			if (resultTimer >= 120) { DrawText(320, 320, 0xffB300, "Rキーでリスタート", 0, 30); }
 			if (resultTimer >= 150) { DrawText(270, 370, 0xffB300, "Tキーでタイトル画面に戻る", 0, 30); }
+			if (resultTimer >= 180 && newRecord) { DrawText(160, 210, 0xffd700, "新記録！！", 0, 30); }
 			if (CheckHitKey(KEY_INPUT_R))
 			{
 				StopSoundMem(sndResult);
