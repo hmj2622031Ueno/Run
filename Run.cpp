@@ -25,6 +25,7 @@ int obstacleHeight;
 int resultTimer = 0;
 int meter = 0;
 int meterTimer = 0;
+int countDown = 180;
 int LoadGraphWithCheck(const char* file);
 
 void GameInit()
@@ -46,6 +47,7 @@ void GameInit()
 	resultTimer = 0;
 	meter = 0;
 	meterTimer = 0;
+	countDown = 180;
 
 	if (obstacleType == 0)
 	{
@@ -217,179 +219,203 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			// 空の表示
 			DrawGraph(0, 0, imgSky, false);
 
-			meterTimer++;
-			if (meterTimer >= 15)
+			if (countDown > 0)
 			{
-				meter++;
-				meterTimer = 0;
-			}
-
-			// 地面の表示、スクロール
-			bgX = bgX - 15;
-			if (bgX <= -WIDTH) { bgX = 0; }
-			DrawGraph(bgX, 0, imgBG, true);
-			DrawGraph(bgX + WIDTH, 0, imgBG, true);
-			DrawText(850, 20, 0xffffff, "%dm", meter, 30);
-
-			if (obstacleType == 0)
-			{
-				if (obstacleX < 600 && obstacleX > -obstacleWidth)
-				{
-					canReverse = false;
-				}
-			}
-			else { canReverse = true; }
-
-			// プレイヤーの反転処理
-			if (spaceNow && !spaceOld && !isJump && !isChanging && canReverse)
-			{
-				reverse = !reverse;
-				if (reverse) { targetY = 80; }
-				else { targetY = 472; }
-				isChanging = true;
-			}
-			spaceOld = spaceNow;
-
-			// プレイヤーのジャンプ処理
-			if (upNow && !isJump && !upOld && !isChanging)
-			{
-				isJump = true;
-				PlaySoundMem(seJump, DX_PLAYTYPE_BACK);
-				if (!reverse) { jumpSpeed = -15; }	// 上にジャンプ
-				else { jumpSpeed = 15; }	// 下にジャンプ
-			}
-
-			if (isJump)
-			{
-				if (!reverse) { jumpSpeed += 1; }
-				else { jumpSpeed -= 1; }
-				catY += jumpSpeed;
-			}
-
-			// プレイヤーの着地設定
-			if (!reverse)
-			{
-				if (catY >= 472)
-				{
-					catY = 472;
-					jumpSpeed = 0;
-					isJump = false;
-				}
+				DrawGraph(0, 0, imgBG, true);
+				DrawGraph(catX, catY, imgCat[0], true);
+				countDown--;
 			}
 			else
 			{
-				if (catY <= 80)
+				meterTimer++;
+				if (meterTimer >= 15)
 				{
-					catY = 80;
-					jumpSpeed = 0;
-					isJump = false;
+					meter++;
+					meterTimer = 0;
 				}
-			}
-			upOld = upNow;
 
-			if (isChanging)
-			{
-				if (catY < targetY)
+				// 地面の表示、スクロール
+				bgX = bgX - 15;
+				if (bgX <= -WIDTH) { bgX = 0; }
+				DrawGraph(bgX, 0, imgBG, true);
+				DrawGraph(bgX + WIDTH, 0, imgBG, true);
+				DrawText(850, 20, 0xffffff, "%dm", meter, 30);
+
+				if (obstacleType == 0)	// 低い障害物の時
 				{
-					catY += 16;
-					if (catY > targetY) { catY = targetY; }
+					if (!reverse && obstacleSide == 1 || reverse && obstacleSide == 0)
+					{
+						if (obstacleX < 600 && obstacleX > -obstacleWidth) { canReverse = false; }
+					}
+
+					if (!reverse && obstacleSide == 0 || reverse && obstacleSide == 1)
+					{
+						if (obstacleX < 600 && obstacleX > -obstacleWidth) { canReverse = true; }
+					}
 				}
-				else if (catY > targetY)
+				else { canReverse = true; }	// 高い障害物の時
+
+				// プレイヤーの反転処理
+				if (spaceNow && !spaceOld && !isJump && !isChanging && canReverse)
 				{
-					catY -= 16;
-					if (catY < targetY) { catY = targetY; }
+					reverse = !reverse;
+					if (reverse) { targetY = 80; }
+					else { targetY = 472; }
+					isChanging = true;
 				}
-				else { isChanging = false; }
-			}
+				spaceOld = spaceNow;
 
-			// プレイヤーの表示
-			if (isJump)
-			{
-				if (!reverse) { DrawGraph(catX, catY, imgJump, true); }
-				else { DrawRotaGraph3(catX + 48, catY + 48, 48, 48, 1.0, -1.0, 0.0, imgJump, true); }
-			}
-			else
-			{
-				if (!reverse) { DrawGraph(catX, catY, imgCat[(timer / 3) % 2], true); }
-				else { DrawRotaGraph3(catX + 48, catY + 48, 48, 48, 1.0, -1.0, 0.0, imgCat[(timer / 3) % 2], true); }
-			}
+				// プレイヤーのジャンプ処理
+				if (upNow && !isJump && !upOld && !isChanging)
+				{
+					isJump = true;
+					PlaySoundMem(seJump, DX_PLAYTYPE_BACK);
+					if (!reverse) { jumpSpeed = -15; }	// 上にジャンプ
+					else { jumpSpeed = 15; }	// 下にジャンプ
+				}
 
-			// 障害物の処理
-			obstacleX -= 15;	// スクロール
+				if (isJump)
+				{
+					if (!reverse) { jumpSpeed += 1; }
+					else { jumpSpeed -= 1; }
+					catY += jumpSpeed;
+				}
 
-			if (obstacleX <= -150)
-			{
-				obstacleX = WIDTH;
+				// プレイヤーの着地設定
+				if (!reverse)
+				{
+					if (catY >= 472)
+					{
+						catY = 472;
+						jumpSpeed = 0;
+						isJump = false;
+					}
+				}
+				else
+				{
+					if (catY <= 80)
+					{
+						catY = 80;
+						jumpSpeed = 0;
+						isJump = false;
+					}
+				}
+				upOld = upNow;
 
-				obstacleType = GetRand(1);
-				obstacleImage = GetRand(2);
-				obstacleSide = GetRand(1);
+				if (isChanging)
+				{
+					if (catY < targetY)
+					{
+						catY += 16;
+						if (catY > targetY) { catY = targetY; }
+					}
+					else if (catY > targetY)
+					{
+						catY -= 16;
+						if (catY < targetY) { catY = targetY; }
+					}
+					else { isChanging = false; }
+				}
+
+				// プレイヤーの表示
+				if (isJump)
+				{
+					if (!reverse) { DrawGraph(catX, catY, imgJump, true); }
+					else { DrawRotaGraph3(catX + 48, catY + 48, 48, 48, 1.0, -1.0, 0.0, imgJump, true); }
+				}
+				else
+				{
+					if (!reverse) { DrawGraph(catX, catY, imgCat[(timer / 3) % 2], true); }
+					else { DrawRotaGraph3(catX + 48, catY + 48, 48, 48, 1.0, -1.0, 0.0, imgCat[(timer / 3) % 2], true); }
+				}
+
+				// 障害物の処理
+				obstacleX -= 15;	// スクロール
+
+				if (obstacleX <= -150)
+				{
+					obstacleX = WIDTH;
+
+					obstacleType = GetRand(1);
+					obstacleImage = GetRand(2);
+					obstacleSide = GetRand(1);
+
+					if (obstacleType == 0)	// 低い障害物
+					{
+						if (obstacleSide == 0)	// 上側
+						{
+							obstacleY = 80;
+						}
+						else	// 下側
+						{
+							obstacleY = 510;
+						}
+					}
+					else	// 高い障害物
+					{
+						if (obstacleSide == 0)	// 上側
+						{
+							obstacleY = 80;
+						}
+						else	// 下側
+						{
+							obstacleY = 310;
+						}
+					}
+				}
 
 				if (obstacleType == 0)	// 低い障害物
 				{
-					if (obstacleSide == 0)	// 上側
-					{
-						obstacleY = 80;
-					}
-					else	// 下側
-					{
-						obstacleY = 510;
-					}
+					DrawGraph(obstacleX, obstacleY, imgLO[obstacleImage], true);
 				}
 				else	// 高い障害物
 				{
-					if (obstacleSide == 0)	// 上側
-					{
-						obstacleY = 80;
-					}
-					else	// 下側
-					{
-						obstacleY = 310;
-					}
+					DrawGraph(obstacleX, obstacleY, imgHO[obstacleImage], true);
+				}
+
+				if (obstacleType == 0)	// 低い障害物
+				{
+					obstacleHeight = 50;
+
+					if (obstacleImage == 0) { obstacleWidth = 50; }
+					else if (obstacleImage == 1) { obstacleWidth = 100; }
+					else { obstacleWidth = 150; }
+				}
+				else	// 高い障害物
+				{
+					obstacleHeight = 250;
+
+					if (obstacleImage == 0) { obstacleWidth = 50; }
+					else if (obstacleImage == 1) { obstacleWidth = 100; }
+					else { obstacleWidth = 150; }
+				}
+
+				if (catX < obstacleX + obstacleWidth && catX + 96 > obstacleX && catY < obstacleY + obstacleHeight && catY + 96 > obstacleY)
+				{
+					StopSoundMem(sndBgm);
+					PlaySoundMem(seDamage, DX_PLAYTYPE_BACK);
+					PlaySoundMem(sndResult, DX_PLAYTYPE_LOOP);
+					scene = RESULT;
+				}
+
+				if (CheckHitKey(KEY_INPUT_T))
+				{
+					GameInit();
+					StopSoundMem(sndBgm);
+					PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
+					scene = TITLE;
 				}
 			}
 
-			if (obstacleType == 0)	// 低い障害物
-			{
-				DrawGraph(obstacleX, obstacleY, imgLO[obstacleImage], true);
-			}
-			else	// 高い障害物
-			{
-				DrawGraph(obstacleX, obstacleY, imgHO[obstacleImage], true);
-			}
-
-			if (obstacleType == 0)	// 低い障害物
-			{
-				obstacleHeight = 50;
-
-				if (obstacleImage == 0) { obstacleWidth = 50; }
-				else if (obstacleImage == 1) { obstacleWidth = 100; }
-				else { obstacleWidth = 150; }
-			}
-			else	// 高い障害物
-			{
-				obstacleHeight = 250;
-
-				if (obstacleImage == 0) { obstacleWidth = 50; }
-				else if (obstacleImage == 1) { obstacleWidth = 100; }
-				else { obstacleWidth = 150; }
+			if (countDown > 120) { DrawText(450, 250, 0xffffff, "3", 0, 100); }
+			else if (countDown > 60) { DrawText(450, 250, 0xffffff, "2", 0, 100); }
+			else if (countDown > 0) { DrawText(450, 250, 0xffffff, "1", 0, 100); }
+			else if (countDown > -60) 
+			{ 
+				DrawText(450, 250, 0xffffff, "GO!", 0, 100);
+				countDown--;
 			}
 
-			if (catX < obstacleX + obstacleWidth && catX + 96 > obstacleX && catY < obstacleY + obstacleHeight && catY + 96 > obstacleY)
-			{
-				StopSoundMem(sndBgm);
-				PlaySoundMem(seDamage, DX_PLAYTYPE_BACK);
-				PlaySoundMem(sndResult, DX_PLAYTYPE_LOOP);
-				scene = RESULT;
-			}
-
-			if (CheckHitKey(KEY_INPUT_T))
-			{
-				GameInit();
-				StopSoundMem(sndBgm);
-				PlaySoundMem(sndTitle, DX_PLAYTYPE_LOOP);
-				scene = TITLE;
-			}
 			break;
 
 		case RESULT:
