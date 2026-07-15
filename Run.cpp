@@ -189,8 +189,8 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			if (bgX <= -WIDTH) { bgX = 0; }
 			DrawGraph(bgX, 0, imgBG, true);
 			DrawGraph(bgX + WIDTH, 0, imgBG, true);
-			DrawText(300, 70, 0xffffff, "Run Game", 0, 80);
-			DrawText(300, 250, 0xffffff, "エンターキーでスタート", 0, 30);
+			DrawText(300, 70, 0xff7000, "Run Game", 0, 80);
+			DrawText(300, 250, 0xff9000, "エンターキーでスタート", 0, 30);
 			DrawText(800, 30, 0xffffff, "ヘルプ(Hキー)", 0, 20);
 			DrawText(10, 30, 0xffd700, "ハイスコア：%dm", hiScore, 20);
 			if (CheckHitKey(KEY_INPUT_RETURN) == 1)	// エンターキー入力でスタート
@@ -223,6 +223,15 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 			// 空の表示
 			DrawGraph(0, 0, imgSky, false);
 
+			if (countDown > 120) { DrawText(450, 250, 0xffffff, "3", 0, 100); }
+			else if (countDown > 60) { DrawText(450, 250, 0xffffff, "2", 0, 100); }
+			else if (countDown > 0) { DrawText(450, 250, 0xffffff, "1", 0, 100); }
+			else if (countDown > -60)
+			{
+				DrawText(450, 250, 0xffffff, "GO!", 0, 100);
+				countDown--;
+			}
+
 			if (countDown > 0)
 			{
 				DrawGraph(0, 0, imgBG, true);
@@ -239,7 +248,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 				}
 
 				// 地面の表示、スクロール
-				bgX = bgX - 15;
+				bgX = bgX - 15 - meter / 100;
 				if (bgX <= -WIDTH) { bgX = 0; }
 				DrawGraph(bgX, 0, imgBG, true);
 				DrawGraph(bgX + WIDTH, 0, imgBG, true);
@@ -334,7 +343,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 				}
 
 				// 障害物の処理
-				obstacleX -= 15;	// スクロール
+				obstacleX = obstacleX - 15 - meter / 100;	// スクロール
 
 				if (obstacleX <= -150)
 				{
@@ -410,16 +419,6 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 					scene = TITLE;
 				}
 			}
-
-			if (countDown > 120) { DrawText(450, 250, 0xffffff, "3", 0, 100); }
-			else if (countDown > 60) { DrawText(450, 250, 0xffffff, "2", 0, 100); }
-			else if (countDown > 0) { DrawText(450, 250, 0xffffff, "1", 0, 100); }
-			else if (countDown > -60) 
-			{ 
-				DrawText(450, 250, 0xffffff, "GO!", 0, 100);
-				countDown--;
-			}
-
 			break;
 
 		case RESULT:
